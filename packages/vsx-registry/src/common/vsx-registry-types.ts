@@ -22,6 +22,7 @@ export interface VSXSearchParam {
     category?: string;
     size?: number;
     offset?: number;
+    includeAllVersions?: boolean;
 }
 
 /**
@@ -31,6 +32,14 @@ export interface VSXSearchResult {
     readonly error?: string;
     readonly offset: number;
     readonly extensions: VSXSearchEntry[];
+}
+
+export interface VSXAllVersions {
+    url: string,
+    version: string,
+    engines?: {
+        [version: string]: string
+    }
 }
 
 /**
@@ -52,6 +61,7 @@ export interface VSXSearchEntry {
     readonly downloadCount: number;
     readonly displayName?: string;
     readonly description?: string;
+    readonly allVersions: VSXAllVersions[];
 }
 
 export type VSXExtensionNamespaceAccess = 'public' | 'restricted';
@@ -62,6 +72,13 @@ export type VSXExtensionNamespaceAccess = 'public' | 'restricted';
 export interface VSXUser {
     loginName: string
     homepage?: string
+}
+
+export interface VSXExtensionRawFiles {
+    download: string
+    readme?: string
+    license?: string
+    icon?: string
 }
 
 /**
@@ -75,12 +92,7 @@ export interface VSXExtensionRaw {
     readonly namespace: string;
     readonly publishedBy: VSXUser
     readonly namespaceAccess: VSXExtensionNamespaceAccess;
-    readonly files: {
-        download: string
-        readme?: string
-        license?: string
-        icon?: string
-    }
+    readonly files: VSXExtensionRawFiles,
     readonly allVersions: {
         [version: string]: string
     }
@@ -102,4 +114,5 @@ export interface VSXExtensionRaw {
     readonly galleryColor?: string;
     readonly galleryTheme?: string;
     readonly qna?: string;
+    readonly engines?: { [engine: string]: string };
 }
