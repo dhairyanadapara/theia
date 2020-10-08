@@ -27,6 +27,7 @@ import { Event } from '@theia/core/lib/common/event';
 import { ILogger } from '@theia/core/lib/common/logger';
 import { MockLogger } from '@theia/core/lib/common/test/mock-logger';
 import { FileService } from '@theia/filesystem/lib/browser/file-service';
+import { Range } from 'vscode-languageserver-types';
 
 disableJSDOM();
 
@@ -34,7 +35,7 @@ const expect = chai.expect;
 let manager: ProblemManager;
 let testContainer: Container;
 
-before(() => {
+beforeEach(() => {
     testContainer = new Container();
     testContainer.bind(ILogger).to(MockLogger);
     testContainer.bind(StorageService).to(LocalStorageService).inSingletonScope();
@@ -45,6 +46,7 @@ before(() => {
     testContainer.bind(ProblemManager).toSelf();
 
     manager = testContainer.get(ProblemManager);
+    manager.cleanAllMarkers();
     manager.setMarkers(new URI('file:/foo/bar.txt'), 'me', [
         {
             range: {
@@ -105,6 +107,7 @@ before(() => {
 });
 
 describe('problem-manager', () => {
+
     it('replaces markers', () => {
         let events = 0;
         manager.onDidChangeMarkers(() => {
@@ -162,4 +165,88 @@ describe('problem-manager', () => {
             dataFilter: data => data.range.end.character > 1
         }).length).equal(1);
     });
+
+    describe('#getUris', () => {
+
+        it('should return the list of uris', () => {
+            const uris: string[] = Array.from(manager.getUris());
+            expect(uris.length).to.equal(2);
+        });
+
+        it('should return 0 uris when no markers are present', () => {
+            manager.cleanAllMarkers();
+            const uris: string[] = Array.from(manager.getUris());
+            expect(uris.length).to.equal(0);
+        });
+
+    });
+
+    describe('#getProblemStat', () => {
+
+        it('should return 0 stats when no markers are present', () => {
+            manager.cleanAllMarkers();
+            const { errors, warnings, infos } = manager.getProblemStat();
+            expect(errors).to.equal(0);
+            expect(warnings).to.equal(0);
+            expect(infos).to.equal(0);
+        });
+
+        it('should return the proper problem stats', () => {
+
+            // Clean the markers for test data.
+            manager.cleanAllMarkers();
+
+            const range: Range = {
+                start: {
+                    line: 1, character: 1
+                },
+                end: {
+                    line: 1, character: 1
+                }
+            };
+
+            // Create 3 error, 2 warning and 1 info markers.
+            manager.setMarkers(new URI('foo'), 'bar', [
+                {
+                    message: 'error-1',
+                    range,
+                    severity: 1,
+                },
+                {
+                    message: 'error-2',
+                    range,
+                    severity: 1,
+                },
+                {
+                    message: 'error-3',
+                    range,
+                    severity: 1,
+                },
+                {
+                    message: 'warning-1',
+                    range,
+                    severity: 2,
+                },
+                {
+                    message: 'warning-2',
+                    range,
+                    severity: 2,
+                },
+                {
+                    message: 'info-1',
+                    range,
+                    severity: 3,
+                }
+            ]);
+
+            // Get the total problem stats.
+            const { errors, warnings, infos } = manager.getProblemStat();
+
+            expect(errors).to.equal(3);
+            expect(warnings).to.equal(2);
+            expect(infos).to.equal(1);
+        });
+
+    });
+
 });
